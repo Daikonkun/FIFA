@@ -177,7 +177,7 @@ Arbitrage/opportunity flag:
 edge = model_probability - polymarket_implied_probability
 ```
 
-The default threshold is `EDGE_THRESHOLD=0.15` (strictly greater than 15 percentage points). Treat this as a research alert, not a trade instruction. Before trading, account for spread, liquidity, slippage, fees, market resolution wording, and legal restrictions.
+The default threshold is `EDGE_THRESHOLD=0.15` (at least 15 percentage points). Treat this as a research alert, not a trade instruction. Before trading, account for spread, liquidity, slippage, fees, market resolution wording, and legal restrictions.
 
 Stage-market alerts currently compare:
 

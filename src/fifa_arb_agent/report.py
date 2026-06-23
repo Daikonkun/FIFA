@@ -222,4 +222,4 @@ def _norm_team(value: str) -> str:
 
 
 def _passes_threshold(edge: float, threshold: float) -> bool:
-    return edge - threshold > 1e-9
+    return edge + 1e-9 >= threshold
