@@ -28,6 +28,7 @@ jobs:
           TEAM_RATINGS_PATH: data/team_ratings.json
           TEAM_CONTEXT_PATH: data/team_context.json
           TELEGRAM_ALERTS_ONLY: "true"
+          EDGE_THRESHOLD: "0.15"
           TOURNAMENT_SIMULATIONS: "20000"
           TOURNAMENT_SEED: "2026"
           TIMEZONE: Asia/Hong_Kong

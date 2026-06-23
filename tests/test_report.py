@@ -94,3 +94,15 @@ def test_find_stage_edges_compares_stage_market_prices() -> None:
     assert len(edges) == 1
     assert edges[0].team == "Argentina"
     assert round(edges[0].edge, 2) == 0.24
+
+
+def test_find_stage_edges_uses_strict_threshold() -> None:
+    probability = TeamStageProbability(team="Argentina", semi_final=0.55)
+    market = PolymarketMarket(
+        market_id="m",
+        question="Will Argentina reach the Semifinals at the 2026 FIFA World Cup?",
+        event_title="World Cup: Nation To Reach Semifinals",
+        outcomes=[MarketOutcome(name="Yes", price=0.40), MarketOutcome(name="No", price=0.60)],
+    )
+
+    assert find_stage_edges([probability], {"semifinals": [market]}, 0.15, 0) == []

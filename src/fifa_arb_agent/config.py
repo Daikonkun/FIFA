@@ -18,7 +18,7 @@ class Settings(BaseModel):
     tournament_simulations: int = 20000
     tournament_seed: int = 2026
     report_lookahead_hours: int = 72
-    edge_threshold: float = 0.06
+    edge_threshold: float = 0.15
     min_market_liquidity: float = 0.0
     timezone: str = "Asia/Hong_Kong"
     database_path: Path = Path("reports/fifa_agent.sqlite3")
@@ -41,7 +41,7 @@ def load_settings() -> Settings:
         tournament_simulations=int(os.getenv("TOURNAMENT_SIMULATIONS", "20000")),
         tournament_seed=int(os.getenv("TOURNAMENT_SEED", "2026")),
         report_lookahead_hours=int(os.getenv("REPORT_LOOKAHEAD_HOURS", "72")),
-        edge_threshold=float(os.getenv("EDGE_THRESHOLD", "0.06")),
+        edge_threshold=float(os.getenv("EDGE_THRESHOLD", "0.15")),
         min_market_liquidity=float(os.getenv("MIN_MARKET_LIQUIDITY", "0")),
         timezone=os.getenv("TIMEZONE", "Asia/Hong_Kong"),
         database_path=Path(os.getenv("DATABASE_PATH", "reports/fifa_agent.sqlite3")),

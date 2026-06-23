@@ -45,7 +45,7 @@ def find_edges(
             if outcome is None or outcome.price is None:
                 continue
             edge = model_prob - outcome.price
-            if edge >= threshold:
+            if _passes_threshold(edge, threshold):
                 edges.append(
                     Edge(
                         side=side,
@@ -86,7 +86,7 @@ def find_stage_edges(
                 continue
             model_probability = float(getattr(probability, probability_attr))
             edge = model_probability - outcome.price
-            if edge >= threshold:
+            if _passes_threshold(edge, threshold):
                 edges.append(
                     StageEdge(
                         stage=stage,
@@ -219,3 +219,7 @@ def _norm_team(value: str) -> str:
         "united states": "usa",
     }
     return aliases.get(normalized, normalized)
+
+
+def _passes_threshold(edge: float, threshold: float) -> bool:
+    return edge - threshold > 1e-9
