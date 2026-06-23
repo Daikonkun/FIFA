@@ -1,0 +1,38 @@
+name: Daily FIFA 2026 Polymarket Report
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e .
+      - name: Run daily agent
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          API_FOOTBALL_BASE_URL: https://v3.football.api-sports.io
+          API_FOOTBALL_LEAGUE_ID: "1"
+          API_FOOTBALL_SEASON: "2026"
+          FIXTURES_URL: ${{ secrets.FIXTURES_URL }}
+          FIXTURES_PATH: data/fixtures.json
+          TEAM_RATINGS_PATH: data/team_ratings.json
+          TEAM_CONTEXT_PATH: data/team_context.json
+          TELEGRAM_ALERTS_ONLY: "true"
+          TOURNAMENT_SIMULATIONS: "20000"
+          TOURNAMENT_SEED: "2026"
+          TIMEZONE: Asia/Hong_Kong
+        run: |
+          python scripts/update_fixtures.py
+          python scripts/update_ratings.py
+          python scripts/update_team_context.py
+          fifa-arb-agent

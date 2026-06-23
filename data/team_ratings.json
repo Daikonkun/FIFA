@@ -1,0 +1,453 @@
+{
+  "metadata": {
+    "elo_source": "https://www.eloratings.net/World.tsv",
+    "confederation_sources": [
+      "https://www.eloratings.net/UEFA.tsv",
+      "https://www.eloratings.net/CONMEBOL.tsv",
+      "https://www.eloratings.net/CONCACAF.tsv",
+      "https://www.eloratings.net/CAF.tsv",
+      "https://www.eloratings.net/AFC.tsv",
+      "https://www.eloratings.net/OFC.tsv"
+    ],
+    "notes": [
+      "elo is World Football Elo rating.",
+      "fifa_rank is populated with the World Football Elo global rank as a ranking prior.",
+      "form_delta is derived from recent Elo rating change and clamped for model stability.",
+      "injury_penalty defaults to 0.0 and should be manually updated near kickoff."
+    ]
+  },
+  "teams": {
+    "Algeria": {
+      "elo": 1759,
+      "fifa_rank": 34,
+      "wc_points_last_3": 0,
+      "confederation": "CAF",
+      "host": false,
+      "form_delta": 0.124,
+      "injury_penalty": 0.0
+    },
+    "Argentina": {
+      "elo": 2128,
+      "fifa_rank": 2,
+      "wc_points_last_3": 25,
+      "confederation": "CONMEBOL",
+      "host": false,
+      "form_delta": 0.06,
+      "injury_penalty": 0.0
+    },
+    "Australia": {
+      "elo": 1799,
+      "fifa_rank": 26,
+      "wc_points_last_3": 11,
+      "confederation": "AFC",
+      "host": false,
+      "form_delta": 0.104,
+      "injury_penalty": 0.0
+    },
+    "Austria": {
+      "elo": 1857,
+      "fifa_rank": 20,
+      "wc_points_last_3": 0,
+      "confederation": "UEFA",
+      "host": false,
+      "form_delta": 0.156,
+      "injury_penalty": 0.0
+    },
+    "Belgium": {
+      "elo": 1869,
+      "fifa_rank": 15,
+      "wc_points_last_3": 18,
+      "confederation": "UEFA",
+      "host": false,
+      "form_delta": 0.076,
+      "injury_penalty": 0.0
+    },
+    "Bosnia & Herzegovina": {
+      "elo": 1596,
+      "fifa_rank": 64,
+      "wc_points_last_3": 0,
+      "confederation": "UEFA",
+      "host": false,
+      "form_delta": 0.096,
+      "injury_penalty": 0.0
+    },
+    "Brazil": {
+      "elo": 1986,
+      "fifa_rank": 6,
+      "wc_points_last_3": 24,
+      "confederation": "CONMEBOL",
+      "host": false,
+      "form_delta": 0.032,
+      "injury_penalty": 0.0
+    },
+    "Canada": {
+      "elo": 1777,
+      "fifa_rank": 28,
+      "wc_points_last_3": 0,
+      "confederation": "CONCACAF",
+      "host": true,
+      "form_delta": -0.112,
+      "injury_penalty": 0.0
+    },
+    "Cape Verde Islands": {
+      "elo": 1625,
+      "fifa_rank": 58,
+      "wc_points_last_3": 0,
+      "confederation": "CAF",
+      "host": false,
+      "form_delta": 0.18,
+      "injury_penalty": 0.0
+    },
+    "Colombia": {
+      "elo": 1998,
+      "fifa_rank": 5,
+      "wc_points_last_3": 14,
+      "confederation": "CONMEBOL",
+      "host": false,
+      "form_delta": 0.0,
+      "injury_penalty": 0.0
+    },
+    "Congo DR": {
+      "elo": 1674,
+      "fifa_rank": 52,
+      "wc_points_last_3": 0,
+      "confederation": "CAF",
+      "host": false,
+      "form_delta": 0.14,
+      "injury_penalty": 0.0
+    },
+    "Croatia": {
+      "elo": 1881,
+      "fifa_rank": 14,
+      "wc_points_last_3": 24,
+      "confederation": "UEFA",
+      "host": false,
+      "form_delta": -0.18,
+      "injury_penalty": 0.0
+    },
+    "Curaçao": {
+      "elo": 1453,
+      "fifa_rank": 89,
+      "wc_points_last_3": 0,
+      "confederation": "CONCACAF",
+      "host": false,
+      "form_delta": -0.052,
+      "injury_penalty": 0.0
+    },
+    "Czechia": {
+      "elo": 1696,
+      "fifa_rank": 48,
+      "wc_points_last_3": 0,
+      "confederation": "UEFA",
+      "host": false,
+      "form_delta": -0.14,
+      "injury_penalty": 0.0
+    },
+    "Ecuador": {
+      "elo": 1864,
+      "fifa_rank": 19,
+      "wc_points_last_3": 4,
+      "confederation": "CONMEBOL",
+      "host": false,
+      "form_delta": -0.18,
+      "injury_penalty": 0.0
+    },
+    "Egypt": {
+      "elo": 1711,
+      "fifa_rank": 42,
+      "wc_points_last_3": 0,
+      "confederation": "CAF",
+      "host": false,
+      "form_delta": 0.18,
+      "injury_penalty": 0.0
+    },
+    "England": {
+      "elo": 2055,
+      "fifa_rank": 4,
+      "wc_points_last_3": 23,
+      "confederation": "UEFA",
+      "host": false,
+      "form_delta": 0.052,
+      "injury_penalty": 0.0
+    },
+    "France": {
+      "elo": 2084,
+      "fifa_rank": 3,
+      "wc_points_last_3": 35,
+      "confederation": "UEFA",
+      "host": false,
+      "form_delta": 0.088,
+      "injury_penalty": 0.0
+    },
+    "Germany": {
+      "elo": 1954,
+      "fifa_rank": 9,
+      "wc_points_last_3": 19,
+      "confederation": "UEFA",
+      "host": false,
+      "form_delta": 0.176,
+      "injury_penalty": 0.0
+    },
+    "Ghana": {
+      "elo": 1557,
+      "fifa_rank": 73,
+      "wc_points_last_3": 1,
+      "confederation": "CAF",
+      "host": false,
+      "form_delta": 0.18,
+      "injury_penalty": 0.0
+    },
+    "Haiti": {
+      "elo": 1528,
+      "fifa_rank": 78,
+      "wc_points_last_3": 0,
+      "confederation": "CONCACAF",
+      "host": false,
+      "form_delta": -0.056,
+      "injury_penalty": 0.0
+    },
+    "Iran": {
+      "elo": 1766,
+      "fifa_rank": 33,
+      "wc_points_last_3": 7,
+      "confederation": "AFC",
+      "host": false,
+      "form_delta": 0.044,
+      "injury_penalty": 0.0
+    },
+    "Iraq": {
+      "elo": 1592,
+      "fifa_rank": 66,
+      "wc_points_last_3": 0,
+      "confederation": "AFC",
+      "host": false,
+      "form_delta": 0.04,
+      "injury_penalty": 0.0
+    },
+    "Ivory Coast": {
+      "elo": 1728,
+      "fifa_rank": 38,
+      "wc_points_last_3": 0,
+      "confederation": "CAF",
+      "host": false,
+      "form_delta": 0.18,
+      "injury_penalty": 0.0
+    },
+    "Japan": {
+      "elo": 1925,
+      "fifa_rank": 11,
+      "wc_points_last_3": 13,
+      "confederation": "AFC",
+      "host": false,
+      "form_delta": 0.18,
+      "injury_penalty": 0.0
+    },
+    "Jordan": {
+      "elo": 1653,
+      "fifa_rank": 55,
+      "wc_points_last_3": 0,
+      "confederation": "AFC",
+      "host": false,
+      "form_delta": -0.144,
+      "injury_penalty": 0.0
+    },
+    "Mexico": {
+      "elo": 1896,
+      "fifa_rank": 12,
+      "wc_points_last_3": 14,
+      "confederation": "CONCACAF",
+      "host": true,
+      "form_delta": 0.16,
+      "injury_penalty": 0.0
+    },
+    "Morocco": {
+      "elo": 1866,
+      "fifa_rank": 18,
+      "wc_points_last_3": 11,
+      "confederation": "CAF",
+      "host": false,
+      "form_delta": 0.18,
+      "injury_penalty": 0.0
+    },
+    "Netherlands": {
+      "elo": 1972,
+      "fifa_rank": 7,
+      "wc_points_last_3": 17,
+      "confederation": "UEFA",
+      "host": false,
+      "form_delta": 0.052,
+      "injury_penalty": 0.0
+    },
+    "New Zealand": {
+      "elo": 1578,
+      "fifa_rank": 69,
+      "wc_points_last_3": 0,
+      "confederation": "OFC",
+      "host": false,
+      "form_delta": -0.028,
+      "injury_penalty": 0.0
+    },
+    "Norway": {
+      "elo": 1929,
+      "fifa_rank": 10,
+      "wc_points_last_3": 0,
+      "confederation": "UEFA",
+      "host": false,
+      "form_delta": 0.028,
+      "injury_penalty": 0.0
+    },
+    "Panama": {
+      "elo": 1683,
+      "fifa_rank": 49,
+      "wc_points_last_3": 0,
+      "confederation": "CONCACAF",
+      "host": false,
+      "form_delta": -0.18,
+      "injury_penalty": 0.0
+    },
+    "Paraguay": {
+      "elo": 1816,
+      "fifa_rank": 24,
+      "wc_points_last_3": 0,
+      "confederation": "CONMEBOL",
+      "host": false,
+      "form_delta": -0.068,
+      "injury_penalty": 0.0
+    },
+    "Portugal": {
+      "elo": 1967,
+      "fifa_rank": 8,
+      "wc_points_last_3": 17,
+      "confederation": "UEFA",
+      "host": false,
+      "form_delta": -0.036,
+      "injury_penalty": 0.0
+    },
+    "Qatar": {
+      "elo": 1437,
+      "fifa_rank": 92,
+      "wc_points_last_3": 0,
+      "confederation": "AFC",
+      "host": false,
+      "form_delta": 0.048,
+      "injury_penalty": 0.0
+    },
+    "Saudi Arabia": {
+      "elo": 1593,
+      "fifa_rank": 65,
+      "wc_points_last_3": 6,
+      "confederation": "AFC",
+      "host": false,
+      "form_delta": 0.004,
+      "injury_penalty": 0.0
+    },
+    "Scotland": {
+      "elo": 1768,
+      "fifa_rank": 31,
+      "wc_points_last_3": 0,
+      "confederation": "UEFA",
+      "host": false,
+      "form_delta": -0.088,
+      "injury_penalty": 0.0
+    },
+    "Senegal": {
+      "elo": 1839,
+      "fifa_rank": 22,
+      "wc_points_last_3": 10,
+      "confederation": "CAF",
+      "host": false,
+      "form_delta": -0.124,
+      "injury_penalty": 0.0
+    },
+    "South Africa": {
+      "elo": 1527,
+      "fifa_rank": 79,
+      "wc_points_last_3": 0,
+      "confederation": "CAF",
+      "host": false,
+      "form_delta": -0.004,
+      "injury_penalty": 0.0
+    },
+    "South Korea": {
+      "elo": 1771,
+      "fifa_rank": 30,
+      "wc_points_last_3": 11,
+      "confederation": "AFC",
+      "host": false,
+      "form_delta": -0.052,
+      "injury_penalty": 0.0
+    },
+    "Spain": {
+      "elo": 2134,
+      "fifa_rank": 1,
+      "wc_points_last_3": 17,
+      "confederation": "UEFA",
+      "host": false,
+      "form_delta": -0.152,
+      "injury_penalty": 0.0
+    },
+    "Sweden": {
+      "elo": 1727,
+      "fifa_rank": 39,
+      "wc_points_last_3": 0,
+      "confederation": "UEFA",
+      "host": false,
+      "form_delta": 0.18,
+      "injury_penalty": 0.0
+    },
+    "Switzerland": {
+      "elo": 1885,
+      "fifa_rank": 13,
+      "wc_points_last_3": 16,
+      "confederation": "UEFA",
+      "host": false,
+      "form_delta": -0.048,
+      "injury_penalty": 0.0
+    },
+    "Tunisia": {
+      "elo": 1570,
+      "fifa_rank": 70,
+      "wc_points_last_3": 7,
+      "confederation": "CAF",
+      "host": false,
+      "form_delta": -0.176,
+      "injury_penalty": 0.0
+    },
+    "Türkiye": {
+      "elo": 1813,
+      "fifa_rank": 25,
+      "wc_points_last_3": 0,
+      "confederation": "UEFA",
+      "host": false,
+      "form_delta": -0.18,
+      "injury_penalty": 0.0
+    },
+    "USA": {
+      "elo": 1820,
+      "fifa_rank": 23,
+      "wc_points_last_3": 9,
+      "confederation": "CONCACAF",
+      "host": true,
+      "form_delta": 0.18,
+      "injury_penalty": 0.0
+    },
+    "Uruguay": {
+      "elo": 1851,
+      "fifa_rank": 21,
+      "wc_points_last_3": 19,
+      "confederation": "CONMEBOL",
+      "host": false,
+      "form_delta": -0.156,
+      "injury_penalty": 0.0
+    },
+    "Uzbekistan": {
+      "elo": 1698,
+      "fifa_rank": 47,
+      "wc_points_last_3": 0,
+      "confederation": "AFC",
+      "host": false,
+      "form_delta": -0.12,
+      "injury_penalty": 0.0
+    }
+  }
+}

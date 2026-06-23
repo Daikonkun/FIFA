@@ -1,0 +1,67 @@
+{
+  "teams": {
+    "Argentina": {
+      "elo": 2145,
+      "fifa_rank": 1,
+      "wc_points_last_3": 18,
+      "confederation": "CONMEBOL",
+      "host": false,
+      "form_delta": 0.12,
+      "injury_penalty": 0.02
+    },
+    "France": {
+      "elo": 2108,
+      "fifa_rank": 2,
+      "wc_points_last_3": 22,
+      "confederation": "UEFA",
+      "host": false,
+      "form_delta": 0.08,
+      "injury_penalty": 0.01
+    },
+    "Brazil": {
+      "elo": 2087,
+      "fifa_rank": 5,
+      "wc_points_last_3": 13,
+      "confederation": "CONMEBOL",
+      "host": false,
+      "form_delta": 0.04,
+      "injury_penalty": 0.00
+    },
+    "England": {
+      "elo": 2053,
+      "fifa_rank": 4,
+      "wc_points_last_3": 14,
+      "confederation": "UEFA",
+      "host": false,
+      "form_delta": 0.07,
+      "injury_penalty": 0.03
+    },
+    "United States": {
+      "elo": 1875,
+      "fifa_rank": 16,
+      "wc_points_last_3": 5,
+      "confederation": "CONCACAF",
+      "host": true,
+      "form_delta": 0.02,
+      "injury_penalty": 0.00
+    },
+    "Mexico": {
+      "elo": 1840,
+      "fifa_rank": 18,
+      "wc_points_last_3": 7,
+      "confederation": "CONCACAF",
+      "host": true,
+      "form_delta": 0.01,
+      "injury_penalty": 0.00
+    },
+    "Canada": {
+      "elo": 1770,
+      "fifa_rank": 31,
+      "wc_points_last_3": 1,
+      "confederation": "CONCACAF",
+      "host": true,
+      "form_delta": 0.00,
+      "injury_penalty": 0.00
+    }
+  }
+}
