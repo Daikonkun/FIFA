@@ -10,7 +10,12 @@ from fifa_arb_agent.models import (
     PolymarketMarket,
     TeamStageProbability,
 )
-from fifa_arb_agent.report import build_backtest_report, build_report, find_stage_edges
+from fifa_arb_agent.report import (
+    build_backtest_report,
+    build_report,
+    build_upcoming_prediction_report,
+    find_stage_edges,
+)
 
 
 def test_alerts_only_report_excludes_matches_without_edges() -> None:
@@ -130,6 +135,39 @@ def test_full_report_includes_prediction_market_deviations() -> None:
     assert "- Argentina: model 60.0% vs market 55.0%; deviation +5.0%" in report
     assert "- Draw: model 20.0% vs market 20.0%; deviation +0.0%" in report
     assert "- France: model 20.0% vs market 25.0%; deviation -5.0%" in report
+
+
+def test_upcoming_prediction_report_is_threshold_free() -> None:
+    fixture = Fixture(
+        match_id="a",
+        kickoff_utc=datetime(2026, 6, 17, tzinfo=UTC),
+        team_a="Argentina",
+        team_b="France",
+    )
+    forecast = MatchForecast(
+        fixture=fixture,
+        team_a_win=0.6,
+        draw=0.2,
+        team_b_win=0.2,
+        fair_team_a_no_draw=0.75,
+        fair_team_b_no_draw=0.25,
+        model_notes=[],
+    )
+    market = PolymarketMarket(
+        market_id="m",
+        question="Argentina vs France winner",
+        outcomes=[
+            MarketOutcome(name="Argentina", price=0.58),
+            MarketOutcome(name="Draw", price=0.20),
+            MarketOutcome(name="France", price=0.22),
+        ],
+    )
+
+    report = build_upcoming_prediction_report([forecast], {"a": [market]}, "Asia/Hong_Kong")
+
+    assert "Match observations are not filtered by the arbitrage threshold." in report
+    assert "Argentina vs France" in report
+    assert "Market dev: Argentina +2.0%, Draw +0.0%, France -2.0%" in report
 
 
 def test_find_stage_edges_compares_stage_market_prices() -> None:

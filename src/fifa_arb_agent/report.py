@@ -266,6 +266,48 @@ def build_combined_alert_report(
     return "\n\n".join(sections)
 
 
+def build_upcoming_prediction_report(
+    forecasts: list[MatchForecast],
+    market_map: dict[str, list[PolymarketMarket]],
+    timezone: str,
+) -> str:
+    tz = ZoneInfo(timezone)
+    now_local = datetime.now(UTC).astimezone(tz)
+    lines = [
+        f"FIFA 2026 upcoming predictions - {now_local:%Y-%m-%d %H:%M %Z}",
+        f"Upcoming fixtures: {len(forecasts)}",
+        "Match observations are not filtered by the arbitrage threshold.",
+        "",
+    ]
+    if not forecasts:
+        lines.append("No upcoming fixtures in the configured lookahead window.")
+        return "\n".join(lines)
+
+    for forecast in forecasts:
+        fixture = forecast.fixture
+        local_kickoff = fixture.kickoff_utc.astimezone(tz)
+        lines.append(f"{fixture.team_a} vs {fixture.team_b} | {local_kickoff:%m-%d %H:%M %Z}")
+        lines.append(
+            "Model: "
+            f"{fixture.team_a} {forecast.team_a_win:.1%}, "
+            f"Draw {forecast.draw:.1%}, "
+            f"{fixture.team_b} {forecast.team_b_win:.1%}"
+        )
+        lines.append(
+            "No-draw fair: "
+            f"{fixture.team_a} {forecast.fair_team_a_no_draw:.1%}, "
+            f"{fixture.team_b} {forecast.fair_team_b_no_draw:.1%}"
+        )
+        deviation_summary = _market_deviation_summary(forecast, market_map.get(fixture.match_id, []))
+        if deviation_summary:
+            lines.append(f"Market dev: {', '.join(deviation_summary)}")
+        else:
+            lines.append("Market dev: none matched")
+        lines.append("")
+
+    return "\n".join(lines).strip()
+
+
 def fixture_label(fixture: Fixture) -> str:
     return f"{fixture.team_a} vs {fixture.team_b}"
 
@@ -294,6 +336,23 @@ def _match_draw_outcome(market: PolymarketMarket) -> MarketOutcome | None:
         if _norm_team(outcome.name) in {"draw", "tie"}:
             return outcome
     return None
+
+
+def _market_deviation_summary(
+    forecast: MatchForecast, markets: list[PolymarketMarket]
+) -> list[str]:
+    fixture = forecast.fixture
+    summary: list[str] = []
+    for market in markets[:1]:
+        for label, model_probability, outcome in (
+            (fixture.team_a, forecast.team_a_win, match_team_outcome(market, fixture.team_a)),
+            ("Draw", forecast.draw, _match_draw_outcome(market)),
+            (fixture.team_b, forecast.team_b_win, match_team_outcome(market, fixture.team_b)),
+        ):
+            if outcome is None or outcome.price is None:
+                continue
+            summary.append(f"{label} {model_probability - outcome.price:+.1%}")
+    return summary
 
 
 def _score_completed_forecast(forecast: MatchForecast) -> dict[str, float | bool | str]:

@@ -39,11 +39,12 @@ fifa-arb-agent
 
 `--dry-run` prints the report and does not send Telegram.
 
-Normal Telegram delivery is alert-only by default. Each scan report includes upcoming
-match predictions, Polymarket comparisons, tournament advancement probabilities, and
-a rolling backtest summary. If no match or stage market has an edge at or above
-`EDGE_THRESHOLD`, the agent persists the scan and sends nothing to Telegram. Alerts
-can come from match-winner markets or stage markets.
+Normal Telegram delivery sends upcoming match predictions for observation on every
+scan, including any matched prediction-market deviations without applying
+`EDGE_THRESHOLD`. The threshold is still used to label arbitrage alerts and to filter
+stage-market alerts. Each persisted scan report includes upcoming match predictions,
+Polymarket comparisons, tournament advancement probabilities, and a rolling backtest
+summary.
 
 ## Data Inputs
 

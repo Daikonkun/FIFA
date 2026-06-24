@@ -10,6 +10,8 @@ from fifa_arb_agent.report import (
     build_backtest_report,
     build_combined_alert_report,
     build_report,
+    build_stage_edge_report,
+    build_upcoming_prediction_report,
     find_edges,
     find_stage_edges,
 )
@@ -78,14 +80,20 @@ class FifaArbAgent:
             report = f"{report}\n\n{alert_summary}"
         scan_id = self.store.save(report, forecasts, market_map, edge_map)
         total_edges = sum(len(items) for items in edge_map.values()) + len(stage_edges)
-        telegram_report = build_combined_alert_report(
-            forecasts, market_map, edge_map, stage_edges, self.settings.timezone
-        )
+        if self.settings.telegram_alerts_only:
+            telegram_sections = [
+                build_upcoming_prediction_report(forecasts, market_map, self.settings.timezone)
+            ]
+            if stage_edges:
+                telegram_sections.append(build_stage_edge_report(stage_edges, self.settings.timezone))
+            telegram_report = "\n\n".join(telegram_sections)
+        else:
+            telegram_report = report
         delivery_note = ""
 
         if not dry_run:
-            if self.settings.telegram_alerts_only and total_edges == 0:
-                delivery_note = "\n\nTelegram: skipped; no probability arbitrage alerts above threshold."
+            if self.settings.telegram_alerts_only and not forecasts and total_edges == 0:
+                delivery_note = "\n\nTelegram: skipped; no upcoming fixtures or probability arbitrage alerts."
             elif not self.settings.telegram_bot_token or not self.settings.telegram_chat_id:
                 raise ValueError(
                     "TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are required unless --dry-run is used."
@@ -96,10 +104,11 @@ class FifaArbAgent:
                     self.settings.telegram_chat_id,
                     self.settings.request_timeout_seconds,
                 )
-                await telegram.send_message(
-                    telegram_report if self.settings.telegram_alerts_only else report
-                )
-                delivery_note = "\n\nTelegram: sent arbitrage alert report."
+                await telegram.send_message(telegram_report)
+                if self.settings.telegram_alerts_only:
+                    delivery_note = "\n\nTelegram: sent upcoming prediction observation report."
+                else:
+                    delivery_note = "\n\nTelegram: sent full scan report."
 
         return f"{report}\n\nSaved scan #{scan_id}{delivery_note}"
 
