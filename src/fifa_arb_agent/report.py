@@ -9,6 +9,7 @@ import re
 from fifa_arb_agent.models import (
     Edge,
     Fixture,
+    MarketOutcome,
     MatchForecast,
     PolymarketMarket,
     StageEdge,
@@ -154,6 +155,13 @@ def build_report(
             f"{fixture.team_b} {forecast.fair_team_b_no_draw:.1%}"
         )
         lines.append(f"Markets matched: {len(markets)}")
+        if not alerts_only:
+            market_deviation_lines = _market_deviation_lines(forecast, markets)
+            if market_deviation_lines:
+                lines.append("Market deviations:")
+                lines.extend(market_deviation_lines)
+            else:
+                lines.append("Market deviations: none matched")
 
         if edges:
             lines.append("Alerts:")
@@ -260,6 +268,32 @@ def build_combined_alert_report(
 
 def fixture_label(fixture: Fixture) -> str:
     return f"{fixture.team_a} vs {fixture.team_b}"
+
+
+def _market_deviation_lines(forecast: MatchForecast, markets: list[PolymarketMarket]) -> list[str]:
+    fixture = forecast.fixture
+    lines: list[str] = []
+    for market in markets[:3]:
+        for label, model_probability, outcome in (
+            (fixture.team_a, forecast.team_a_win, match_team_outcome(market, fixture.team_a)),
+            ("Draw", forecast.draw, _match_draw_outcome(market)),
+            (fixture.team_b, forecast.team_b_win, match_team_outcome(market, fixture.team_b)),
+        ):
+            if outcome is None or outcome.price is None:
+                continue
+            url = f" | {market.url}" if market.url else ""
+            lines.append(
+                f"- {label}: model {model_probability:.1%} vs market {outcome.price:.1%}; "
+                f"deviation {model_probability - outcome.price:+.1%}{url}"
+            )
+    return lines
+
+
+def _match_draw_outcome(market: PolymarketMarket) -> MarketOutcome | None:
+    for outcome in market.outcomes:
+        if _norm_team(outcome.name) in {"draw", "tie"}:
+            return outcome
+    return None
 
 
 def _score_completed_forecast(forecast: MatchForecast) -> dict[str, float | bool | str]:

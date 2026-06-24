@@ -98,6 +98,40 @@ def test_full_report_includes_upcoming_prediction_details() -> None:
     assert "No-draw fair: Argentina 75.0%, France 25.0%" in report
 
 
+def test_full_report_includes_prediction_market_deviations() -> None:
+    fixture = Fixture(
+        match_id="a",
+        kickoff_utc=datetime(2026, 6, 17, tzinfo=UTC),
+        team_a="Argentina",
+        team_b="France",
+    )
+    forecast = MatchForecast(
+        fixture=fixture,
+        team_a_win=0.6,
+        draw=0.2,
+        team_b_win=0.2,
+        fair_team_a_no_draw=0.75,
+        fair_team_b_no_draw=0.25,
+        model_notes=[],
+    )
+    market = PolymarketMarket(
+        market_id="m",
+        question="Argentina vs France winner",
+        outcomes=[
+            MarketOutcome(name="Argentina", price=0.55),
+            MarketOutcome(name="Draw", price=0.20),
+            MarketOutcome(name="France", price=0.25),
+        ],
+    )
+
+    report = build_report([forecast], {"a": [market]}, {"a": []}, "Asia/Hong_Kong")
+
+    assert "Market deviations:" in report
+    assert "- Argentina: model 60.0% vs market 55.0%; deviation +5.0%" in report
+    assert "- Draw: model 20.0% vs market 20.0%; deviation +0.0%" in report
+    assert "- France: model 20.0% vs market 25.0%; deviation -5.0%" in report
+
+
 def test_find_stage_edges_compares_stage_market_prices() -> None:
     probability = TeamStageProbability(
         team="Argentina",
