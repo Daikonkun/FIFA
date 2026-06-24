@@ -39,7 +39,9 @@ fifa-arb-agent
 
 `--dry-run` prints the report and does not send Telegram.
 
-Normal Telegram delivery is alert-only by default. If no match has an edge above
+Normal Telegram delivery is alert-only by default. Each scan report includes upcoming
+match predictions, Polymarket comparisons, tournament advancement probabilities, and
+a rolling backtest summary. If no match or stage market has an edge at or above
 `EDGE_THRESHOLD`, the agent persists the scan and sends nothing to Telegram. Alerts
 can come from match-winner markets or stage markets.
 
@@ -153,6 +155,8 @@ TOURNAMENT_SEED=2026
 ## Calibration Method
 
 The model produces a 3-way regulation-time forecast: `team_a_win`, `draw`, `team_b_win`.
+Daily scan reports also show no-draw fair probabilities for each upcoming match, which
+are useful when comparing against two-outcome winner/advance markets.
 
 The side-strength logit combines:
 
@@ -185,6 +189,21 @@ Stage-market alerts currently compare:
 - reach semifinals against simulated `semi_final`,
 - reach final against simulated `final`,
 - win World Cup against simulated `champion`.
+
+## Rolling Backtest
+
+Every daily scan scores completed fixtures against the current model inputs and appends
+a compact validation block to the persisted report. The block includes:
+
+- 1X2 top-pick accuracy,
+- non-draw side accuracy,
+- draw top-pick hits,
+- Brier score,
+- log loss.
+
+This is a current-snapshot diagnostic, not a clean historical pre-match backtest. A
+fully clean backtest would require saving ratings and team context snapshots before
+each kickoff.
 
 ## Cron
 

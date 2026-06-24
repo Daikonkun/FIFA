@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
+import math
 import re
 
 from fifa_arb_agent.models import (
@@ -130,6 +131,7 @@ def build_report(
     total_edges = sum(len(items) for items in edge_map.values())
     lines.append(f"Fixtures scanned: {len(forecasts)}")
     lines.append(f"Probability edges flagged: {total_edges}")
+    lines.append("Upcoming match predictions:")
     lines.append("")
 
     for forecast in filtered_forecasts:
@@ -145,6 +147,11 @@ def build_report(
             f"{fixture.team_a} {forecast.team_a_win:.1%}, "
             f"Draw {forecast.draw:.1%}, "
             f"{fixture.team_b} {forecast.team_b_win:.1%}"
+        )
+        lines.append(
+            "No-draw fair: "
+            f"{fixture.team_a} {forecast.fair_team_a_no_draw:.1%}, "
+            f"{fixture.team_b} {forecast.fair_team_b_no_draw:.1%}"
         )
         lines.append(f"Markets matched: {len(markets)}")
 
@@ -164,6 +171,50 @@ def build_report(
 
     lines.append("Research alert only. Check wording, liquidity, spread, fees, and legal access before action.")
     return "\n".join(lines).strip()
+
+
+def build_backtest_report(forecasts: list[MatchForecast], timezone: str) -> str:
+    tz = ZoneInfo(timezone)
+    now_local = datetime.now(UTC).astimezone(tz)
+    completed = [
+        forecast
+        for forecast in forecasts
+        if forecast.fixture.goals_a is not None and forecast.fixture.goals_b is not None
+    ]
+    lines = [
+        f"Rolling backtest - {now_local:%Y-%m-%d %H:%M %Z}",
+        "Scope: completed fixtures scored with current model inputs, not historical pre-kickoff snapshots.",
+    ]
+
+    if not completed:
+        lines.append("Completed fixtures tested: 0")
+        return "\n".join(lines)
+
+    rows = [_score_completed_forecast(forecast) for forecast in completed]
+    total = len(rows)
+    top_pick_hits = sum(row["top_pick_hit"] for row in rows)
+    non_draw_rows = [row for row in rows if row["actual"] != "draw"]
+    non_draw_side_hits = sum(row["side_hit"] for row in non_draw_rows)
+    draw_rows = [row for row in rows if row["actual"] == "draw"]
+    draw_hits = sum(row["top_pick_hit"] for row in draw_rows)
+    avg_brier = sum(row["brier"] for row in rows) / total
+    avg_logloss = sum(row["logloss"] for row in rows) / total
+
+    lines.extend(
+        [
+            f"Completed fixtures tested: {total}",
+            f"1X2 top-pick accuracy: {top_pick_hits}/{total} ({top_pick_hits / total:.1%})",
+            (
+                "Non-draw side accuracy: "
+                f"{non_draw_side_hits}/{len(non_draw_rows)} "
+                f"({_safe_rate(non_draw_side_hits, len(non_draw_rows)):.1%})"
+            ),
+            f"Draw top-pick hits: {draw_hits}/{len(draw_rows)} ({_safe_rate(draw_hits, len(draw_rows)):.1%})",
+            f"Brier score: {avg_brier:.3f}",
+            f"Log loss: {avg_logloss:.3f}",
+        ]
+    )
+    return "\n".join(lines)
 
 
 def build_stage_edge_report(stage_edges: list[StageEdge], timezone: str) -> str:
@@ -209,6 +260,40 @@ def build_combined_alert_report(
 
 def fixture_label(fixture: Fixture) -> str:
     return f"{fixture.team_a} vs {fixture.team_b}"
+
+
+def _score_completed_forecast(forecast: MatchForecast) -> dict[str, float | bool | str]:
+    fixture = forecast.fixture
+    probabilities = {
+        "team_a": forecast.team_a_win,
+        "draw": forecast.draw,
+        "team_b": forecast.team_b_win,
+    }
+    top_pick = max(probabilities, key=probabilities.get)
+    if fixture.goals_a is None or fixture.goals_b is None:
+        raise ValueError("Completed forecast scoring requires goals.")
+    if fixture.goals_a > fixture.goals_b:
+        actual = "team_a"
+    elif fixture.goals_b > fixture.goals_a:
+        actual = "team_b"
+    else:
+        actual = "draw"
+
+    side_pick = "team_a" if forecast.team_a_win >= forecast.team_b_win else "team_b"
+    return {
+        "actual": actual,
+        "top_pick_hit": top_pick == actual,
+        "side_hit": side_pick == actual,
+        "brier": sum(
+            (probability - (1.0 if outcome == actual else 0.0)) ** 2
+            for outcome, probability in probabilities.items()
+        ),
+        "logloss": -math.log(max(probabilities[actual], 1e-12)),
+    }
+
+
+def _safe_rate(numerator: int, denominator: int) -> float:
+    return numerator / denominator if denominator else 0.0
 
 
 def _norm_team(value: str) -> str:
