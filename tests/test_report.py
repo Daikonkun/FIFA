@@ -102,6 +102,7 @@ def test_full_report_includes_upcoming_prediction_details() -> None:
     assert "Upcoming match predictions:" in report
     assert "Model: Argentina 60.0%, Draw 20.0%, France 20.0%" in report
     assert "No-draw fair: Argentina 75.0%, France 25.0%" in report
+    assert "Balanced combo:" in report
 
 
 def test_full_report_includes_prediction_market_deviations() -> None:
@@ -211,6 +212,7 @@ def test_upcoming_prediction_report_is_threshold_free() -> None:
     assert "Match observations are not filtered by the arbitrage threshold." in report
     assert "Argentina vs France" in report
     assert "Market dev: Argentina +2.0%, Draw +0.0%, France -2.0%" in report
+    assert "Combo:" in report
 
 
 def test_upcoming_prediction_report_includes_prop_deviation_summary() -> None:

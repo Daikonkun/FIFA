@@ -169,6 +169,16 @@ These handicap and total-goals markets are shown as observation deviations in da
 reports. They only become arbitrage alerts when the model edge reaches
 `EDGE_THRESHOLD`.
 
+Daily reports also include a balanced combo suggestion for each upcoming match. The
+combo mixes:
+
+- a higher-probability handicap safety leg,
+- a 1X2 directional leg,
+- a smaller upside handicap leg.
+
+The combo prints model probability, fair Polymarket price, decimal fair odds, and any
+matched market edge. It is a research sizing template, not an instruction to trade.
+
 The side-strength logit combines:
 
 - global rating delta: Elo-like rating difference,

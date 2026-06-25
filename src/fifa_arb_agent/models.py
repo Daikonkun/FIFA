@@ -116,6 +116,27 @@ class PropEdge(BaseModel):
     matched_outcome: MarketOutcome
 
 
+class ComboLeg(BaseModel):
+    role: Literal["safety", "direction", "upside"]
+    market_type: Literal["1x2", "handicap"]
+    label: str
+    model_probability: float
+    stake_weight: float
+    market_probability: float | None = None
+    edge: float | None = None
+
+    @property
+    def fair_decimal_odds(self) -> float:
+        return 1 / self.model_probability if self.model_probability > 0 else float("inf")
+
+
+class MatchComboRecommendation(BaseModel):
+    fixture: Fixture
+    profile: str
+    legs: list[ComboLeg]
+    note: str
+
+
 class TeamStageProbability(BaseModel):
     team: str
     top_32: float = 0.0

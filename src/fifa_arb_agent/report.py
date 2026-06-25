@@ -23,6 +23,7 @@ from fifa_arb_agent.polymarket import (
     match_team_outcome,
     match_yes_outcome,
 )
+from fifa_arb_agent.recommendations import build_combo_recommendation
 from fifa_arb_agent.score_model import ScoreGrid, build_score_grid
 
 
@@ -222,6 +223,8 @@ def build_report(
                 lines.extend(prop_deviation_lines)
             else:
                 lines.append("Handicap/total deviations: none matched")
+            lines.append("Balanced combo:")
+            lines.extend(_combo_recommendation_lines(forecast, markets))
 
         if edges:
             lines.append("Alerts:")
@@ -391,6 +394,7 @@ def build_upcoming_prediction_report(
             lines.append(f"Handicap/total dev: {', '.join(prop_summary)}")
         else:
             lines.append("Handicap/total dev: none matched")
+        lines.append(f"Combo: {_combo_recommendation_summary(forecast, market_map.get(fixture.match_id, []))}")
         lines.append("")
 
     return "\n".join(lines).strip()
@@ -439,6 +443,35 @@ def _prop_deviation_lines(forecast: MatchForecast, markets: list[PolymarketMarke
                 f"{spec.outcome.price:.1%}; deviation {model_probability - spec.outcome.price:+.1%}{url}"
             )
     return lines
+
+
+def _combo_recommendation_lines(
+    forecast: MatchForecast, markets: list[PolymarketMarket]
+) -> list[str]:
+    combo = build_combo_recommendation(forecast, markets)
+    lines = [f"Profile: {combo.profile}"]
+    for leg in combo.legs:
+        market = ""
+        if leg.market_probability is not None and leg.edge is not None:
+            market = f", market {leg.market_probability:.1%}, edge {leg.edge:+.1%}"
+        lines.append(
+            f"- {leg.role.title()} {leg.stake_weight:.0%}: {leg.label} "
+            f"model {leg.model_probability:.1%}, fair <= {leg.model_probability:.3f} "
+            f"(dec {leg.fair_decimal_odds:.2f}){market}"
+        )
+    lines.append(f"Note: {combo.note}")
+    return lines
+
+
+def _combo_recommendation_summary(forecast: MatchForecast, markets: list[PolymarketMarket]) -> str:
+    combo = build_combo_recommendation(forecast, markets)
+    parts = []
+    for leg in combo.legs:
+        market = ""
+        if leg.edge is not None:
+            market = f", edge {leg.edge:+.1%}"
+        parts.append(f"{leg.role} {leg.stake_weight:.0%} {leg.label} p {leg.model_probability:.1%}{market}")
+    return "; ".join(parts)
 
 
 def _match_draw_outcome(market: PolymarketMarket) -> MarketOutcome | None:
