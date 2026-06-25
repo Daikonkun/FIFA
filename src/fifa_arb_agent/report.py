@@ -12,10 +12,18 @@ from fifa_arb_agent.models import (
     MarketOutcome,
     MatchForecast,
     PolymarketMarket,
+    PropEdge,
     StageEdge,
     TeamStageProbability,
 )
-from fifa_arb_agent.polymarket import extract_stage_market_team, match_team_outcome, match_yes_outcome
+from fifa_arb_agent.polymarket import (
+    PropMarketSpec,
+    extract_prop_market_specs,
+    extract_stage_market_team,
+    match_team_outcome,
+    match_yes_outcome,
+)
+from fifa_arb_agent.score_model import ScoreGrid, build_score_grid
 
 
 STAGE_ATTRS = {
@@ -37,6 +45,8 @@ def find_edges(
 
     for market in markets:
         if market.liquidity is not None and market.liquidity < min_market_liquidity:
+            continue
+        if extract_prop_market_specs(market, fixture):
             continue
 
         for side, team, model_prob in (
@@ -104,12 +114,48 @@ def find_stage_edges(
     return sorted(edges, key=lambda item: item.edge, reverse=True)
 
 
+def find_prop_edges(
+    forecast: MatchForecast,
+    markets: list[PolymarketMarket],
+    threshold: float,
+    min_market_liquidity: float,
+) -> list[PropEdge]:
+    edges: list[PropEdge] = []
+    if not markets:
+        return edges
+    score_grid: ScoreGrid | None = None
+    for market in markets:
+        if market.liquidity is not None and market.liquidity < min_market_liquidity:
+            continue
+        for spec in extract_prop_market_specs(market, forecast.fixture):
+            if spec.outcome.price is None:
+                continue
+            if score_grid is None:
+                score_grid = build_score_grid(forecast)
+            model_probability = _price_prop_spec(score_grid, spec)
+            edge = model_probability - spec.outcome.price
+            if _passes_threshold(edge, threshold):
+                edges.append(
+                    PropEdge(
+                        market_type=spec.market_type,
+                        label=spec.label,
+                        model_probability=model_probability,
+                        market_probability=spec.outcome.price,
+                        edge=edge,
+                        market=market,
+                        matched_outcome=spec.outcome,
+                    )
+                )
+    return sorted(edges, key=lambda item: item.edge, reverse=True)
+
+
 def build_report(
     forecasts: list[MatchForecast],
     market_map: dict[str, list[PolymarketMarket]],
     edge_map: dict[str, list[Edge]],
     timezone: str,
     alerts_only: bool = False,
+    prop_edge_map: dict[str, list[PropEdge]] | None = None,
 ) -> str:
     tz = ZoneInfo(timezone)
     now_local = datetime.now(UTC).astimezone(tz)
@@ -119,7 +165,11 @@ def build_report(
     ]
 
     filtered_forecasts = [
-        forecast for forecast in forecasts if not alerts_only or edge_map.get(forecast.fixture.match_id)
+        forecast
+        for forecast in forecasts
+        if not alerts_only
+        or edge_map.get(forecast.fixture.match_id)
+        or (prop_edge_map or {}).get(forecast.fixture.match_id)
     ]
 
     if not filtered_forecasts:
@@ -129,7 +179,10 @@ def build_report(
         lines.append("No upcoming fixtures in the configured lookahead window.")
         return "\n".join(lines)
 
-    total_edges = sum(len(items) for items in edge_map.values())
+    prop_edge_map = prop_edge_map or {}
+    total_edges = sum(len(items) for items in edge_map.values()) + sum(
+        len(items) for items in prop_edge_map.values()
+    )
     lines.append(f"Fixtures scanned: {len(forecasts)}")
     lines.append(f"Probability edges flagged: {total_edges}")
     lines.append("Upcoming match predictions:")
@@ -140,6 +193,7 @@ def build_report(
         local_kickoff = fixture.kickoff_utc.astimezone(tz)
         markets = market_map.get(fixture.match_id, [])
         edges = edge_map.get(fixture.match_id, [])
+        prop_edges = prop_edge_map.get(fixture.match_id, [])
 
         lines.append(f"{fixture.team_a} vs {fixture.team_b}")
         lines.append(f"Kickoff: {local_kickoff:%Y-%m-%d %H:%M %Z} | Stage: {fixture.stage}")
@@ -162,6 +216,12 @@ def build_report(
                 lines.extend(market_deviation_lines)
             else:
                 lines.append("Market deviations: none matched")
+            prop_deviation_lines = _prop_deviation_lines(forecast, markets)
+            if prop_deviation_lines:
+                lines.append("Handicap/total deviations:")
+                lines.extend(prop_deviation_lines)
+            else:
+                lines.append("Handicap/total deviations: none matched")
 
         if edges:
             lines.append("Alerts:")
@@ -173,6 +233,17 @@ def build_report(
                 )
         elif not alerts_only:
             lines.append("Alerts: none above threshold")
+
+        if prop_edges:
+            lines.append("Handicap/total alerts:")
+            for edge in prop_edges[:3]:
+                url = f" | {edge.market.url}" if edge.market.url else ""
+                lines.append(
+                    f"- {edge.label}: model {edge.model_probability:.1%} vs market "
+                    f"{edge.market_probability:.1%}; edge {edge.edge:.1%}{url}"
+                )
+        elif not alerts_only:
+            lines.append("Handicap/total alerts: none above threshold")
 
         lines.append(f"Notes: {', '.join(forecast.model_notes)}")
         lines.append("")
@@ -254,11 +325,23 @@ def build_combined_alert_report(
     edge_map: dict[str, list[Edge]],
     stage_edges: list[StageEdge],
     timezone: str,
+    prop_edge_map: dict[str, list[PropEdge]] | None = None,
 ) -> str:
     sections = []
     match_edge_count = sum(len(items) for items in edge_map.values())
-    if match_edge_count:
-        sections.append(build_report(forecasts, market_map, edge_map, timezone, alerts_only=True))
+    prop_edge_map = prop_edge_map or {}
+    prop_edge_count = sum(len(items) for items in prop_edge_map.values())
+    if match_edge_count or prop_edge_count:
+        sections.append(
+            build_report(
+                forecasts,
+                market_map,
+                edge_map,
+                timezone,
+                alerts_only=True,
+                prop_edge_map=prop_edge_map,
+            )
+        )
     if stage_edges:
         sections.append(build_stage_edge_report(stage_edges, timezone))
     if not sections:
@@ -303,6 +386,11 @@ def build_upcoming_prediction_report(
             lines.append(f"Market dev: {', '.join(deviation_summary)}")
         else:
             lines.append("Market dev: none matched")
+        prop_summary = _prop_deviation_summary(forecast, market_map.get(fixture.match_id, []))
+        if prop_summary:
+            lines.append(f"Handicap/total dev: {', '.join(prop_summary)}")
+        else:
+            lines.append("Handicap/total dev: none matched")
         lines.append("")
 
     return "\n".join(lines).strip()
@@ -316,6 +404,8 @@ def _market_deviation_lines(forecast: MatchForecast, markets: list[PolymarketMar
     fixture = forecast.fixture
     lines: list[str] = []
     for market in markets[:3]:
+        if extract_prop_market_specs(market, fixture):
+            continue
         for label, model_probability, outcome in (
             (fixture.team_a, forecast.team_a_win, match_team_outcome(market, fixture.team_a)),
             ("Draw", forecast.draw, _match_draw_outcome(market)),
@@ -327,6 +417,26 @@ def _market_deviation_lines(forecast: MatchForecast, markets: list[PolymarketMar
             lines.append(
                 f"- {label}: model {model_probability:.1%} vs market {outcome.price:.1%}; "
                 f"deviation {model_probability - outcome.price:+.1%}{url}"
+            )
+    return lines
+
+
+def _prop_deviation_lines(forecast: MatchForecast, markets: list[PolymarketMarket]) -> list[str]:
+    if not markets:
+        return []
+    score_grid: ScoreGrid | None = None
+    lines: list[str] = []
+    for market in markets[:3]:
+        for spec in extract_prop_market_specs(market, forecast.fixture):
+            if spec.outcome.price is None:
+                continue
+            if score_grid is None:
+                score_grid = build_score_grid(forecast)
+            model_probability = _price_prop_spec(score_grid, spec)
+            url = f" | {market.url}" if market.url else ""
+            lines.append(
+                f"- {spec.label}: model {model_probability:.1%} vs market "
+                f"{spec.outcome.price:.1%}; deviation {model_probability - spec.outcome.price:+.1%}{url}"
             )
     return lines
 
@@ -344,6 +454,8 @@ def _market_deviation_summary(
     fixture = forecast.fixture
     summary: list[str] = []
     for market in markets[:1]:
+        if extract_prop_market_specs(market, fixture):
+            continue
         for label, model_probability, outcome in (
             (fixture.team_a, forecast.team_a_win, match_team_outcome(market, fixture.team_a)),
             ("Draw", forecast.draw, _match_draw_outcome(market)),
@@ -353,6 +465,32 @@ def _market_deviation_summary(
                 continue
             summary.append(f"{label} {model_probability - outcome.price:+.1%}")
     return summary
+
+
+def _prop_deviation_summary(
+    forecast: MatchForecast, markets: list[PolymarketMarket]
+) -> list[str]:
+    if not markets:
+        return []
+    score_grid: ScoreGrid | None = None
+    summary: list[str] = []
+    for market in markets[:1]:
+        for spec in extract_prop_market_specs(market, forecast.fixture):
+            if spec.outcome.price is None:
+                continue
+            if score_grid is None:
+                score_grid = build_score_grid(forecast)
+            model_probability = _price_prop_spec(score_grid, spec)
+            summary.append(f"{spec.label} {model_probability - spec.outcome.price:+.1%}")
+    return summary
+
+
+def _price_prop_spec(score_grid: ScoreGrid, spec: PropMarketSpec) -> float:
+    if spec.market_type == "handicap":
+        return score_grid.price_handicap(spec.side, spec.line)
+    if spec.market_type == "total_goals":
+        return score_grid.price_total_goals(spec.line, spec.side)
+    raise ValueError(f"Unsupported prop market type: {spec.market_type}")
 
 
 def _score_completed_forecast(forecast: MatchForecast) -> dict[str, float | bool | str]:

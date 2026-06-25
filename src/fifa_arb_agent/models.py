@@ -106,6 +106,16 @@ class StageEdge(BaseModel):
     matched_outcome: MarketOutcome
 
 
+class PropEdge(BaseModel):
+    market_type: Literal["handicap", "total_goals"]
+    label: str
+    model_probability: float
+    market_probability: float
+    edge: float
+    market: PolymarketMarket
+    matched_outcome: MarketOutcome
+
+
 class TeamStageProbability(BaseModel):
     team: str
     top_32: float = 0.0

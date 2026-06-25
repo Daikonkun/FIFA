@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import Any
 
 import httpx
@@ -32,6 +33,15 @@ STAGE_MARKET_SPECS = {
         "probability_attr": "champion",
     },
 }
+
+
+@dataclass(frozen=True)
+class PropMarketSpec:
+    market_type: str
+    label: str
+    side: str
+    line: float
+    outcome: MarketOutcome
 
 
 class PolymarketClient:
@@ -181,6 +191,10 @@ def extract_stage_market_team(market: PolymarketMarket) -> str | None:
     return match.group(1).strip()
 
 
+def extract_prop_market_specs(market: PolymarketMarket, fixture: Fixture) -> list[PropMarketSpec]:
+    return _extract_total_specs(market) + _extract_handicap_specs(market, fixture)
+
+
 def _parse_market(
     raw_market: dict[str, Any], event_title: str | None, event_slug: str | None
 ) -> PolymarketMarket | None:
@@ -250,6 +264,8 @@ def _looks_like_supported_match_market(market: PolymarketMarket, fixture: Fixtur
     win_terms = (" win", " winner", " beat", " defeat", " advance", " qualify")
     if any(term in f" {text}" for term in win_terms):
         return True
+    if extract_prop_market_specs(market, fixture):
+        return True
 
     outcome_text = [_norm(outcome.name) for outcome in market.outcomes]
     has_team_a = any(_norm(fixture.team_a) in outcome or outcome in _norm(fixture.team_a) for outcome in outcome_text)
@@ -271,6 +287,134 @@ def _looks_like_supported_stage_market(market: PolymarketMarket, stage: str) -> 
     if stage == "winner":
         return " win " in f" {text} " and "world cup" in text
     return False
+
+
+def _extract_total_specs(market: PolymarketMarket) -> list[PropMarketSpec]:
+    specs: list[PropMarketSpec] = []
+    text = _prop_text(" ".join([market.question, market.event_title or "", market.slug or ""]))
+    for outcome in market.outcomes:
+        outcome_text = _prop_text(outcome.name)
+        line = _extract_total_line(" ".join([text, outcome_text]))
+        if line is None:
+            continue
+        if "over" in outcome_text or " over " in f" {text} ":
+            specs.append(
+                PropMarketSpec("total_goals", f"Over {line:g} goals", "over", line, outcome)
+            )
+        if "under" in outcome_text or " under " in f" {text} ":
+            specs.append(
+                PropMarketSpec("total_goals", f"Under {line:g} goals", "under", line, outcome)
+            )
+    yes_outcome = _yes_outcome(market)
+    if yes_outcome is not None:
+        line = _extract_total_line(text)
+        if line is not None:
+            if " over " in f" {text} ":
+                specs.append(
+                    PropMarketSpec("total_goals", f"Over {line:g} goals", "over", line, yes_outcome)
+                )
+            elif " under " in f" {text} ":
+                specs.append(
+                    PropMarketSpec("total_goals", f"Under {line:g} goals", "under", line, yes_outcome)
+                )
+    return _dedupe_specs(specs)
+
+
+def _extract_handicap_specs(market: PolymarketMarket, fixture: Fixture) -> list[PropMarketSpec]:
+    specs: list[PropMarketSpec] = []
+    market_text = _prop_text(" ".join([market.question, market.event_title or "", market.slug or ""]))
+    for outcome in market.outcomes:
+        combined = " ".join([market_text, _prop_text(outcome.name)])
+        for side, team in (("team_a", fixture.team_a), ("team_b", fixture.team_b)):
+            handicap = _extract_team_handicap(combined, team)
+            if handicap is not None:
+                specs.append(
+                    PropMarketSpec(
+                        "handicap",
+                        f"{team} {handicap:+g}",
+                        side,
+                        handicap,
+                        outcome,
+                    )
+                )
+    yes_outcome = _yes_outcome(market)
+    if yes_outcome is not None:
+        for side, team in (("team_a", fixture.team_a), ("team_b", fixture.team_b)):
+            handicap = _extract_team_handicap(market_text, team)
+            if handicap is not None:
+                specs.append(
+                    PropMarketSpec(
+                        "handicap",
+                        f"{team} {handicap:+g}",
+                        side,
+                        handicap,
+                        yes_outcome,
+                    )
+                )
+            margin_handicap = _extract_win_margin_handicap(market_text, team)
+            if margin_handicap is not None:
+                specs.append(
+                    PropMarketSpec(
+                        "handicap",
+                        f"{team} {margin_handicap:+g}",
+                        side,
+                        margin_handicap,
+                        yes_outcome,
+                    )
+                )
+    return _dedupe_specs(specs)
+
+
+def _extract_total_line(text: str) -> float | None:
+    match = re.search(r"(?:over|under|total goals?)\s+(\d+(?:\.\d+)?)", text)
+    if match:
+        return float(match.group(1))
+    match = re.search(r"(\d+(?:\.\d+)?)\s+(?:goals?|total goals?)", text)
+    if match and ("over" in text or "under" in text):
+        return float(match.group(1))
+    return None
+
+
+def _extract_team_handicap(text: str, team: str) -> float | None:
+    team_norm = _prop_text(team)
+    escaped = re.escape(team_norm)
+    patterns = (
+        rf"{escaped}\s*([+-]\s*\d+(?:\.\d+)?)",
+        rf"([+-]\s*\d+(?:\.\d+)?)\s*{escaped}",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if match:
+            return float(match.group(1).replace(" ", ""))
+    return None
+
+
+def _extract_win_margin_handicap(text: str, team: str) -> float | None:
+    team_norm = _prop_text(team)
+    if team_norm not in text:
+        return None
+    match = re.search(r"(?:by|margin of)\s+(\d+)\s*(?:or more|\+|plus)", text)
+    if not match:
+        return None
+    return -(float(match.group(1)) - 0.5)
+
+
+def _yes_outcome(market: PolymarketMarket) -> MarketOutcome | None:
+    for outcome in market.outcomes:
+        if _norm(outcome.name) == "yes":
+            return outcome
+    return None
+
+
+def _dedupe_specs(specs: list[PropMarketSpec]) -> list[PropMarketSpec]:
+    deduped: list[PropMarketSpec] = []
+    seen = set()
+    for spec in specs:
+        key = (spec.market_type, spec.label, spec.side, spec.line, id(spec.outcome))
+        if key not in seen:
+            seen.add(key)
+            deduped.append(spec)
+    return deduped
 
 
 def _loads_maybe_json(value: Any) -> Any:
@@ -314,3 +458,7 @@ def _iter_outcomes(markets: list[PolymarketMarket]) -> Iterable[MarketOutcome]:
 
 def _norm(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", value.casefold()).strip()
+
+
+def _prop_text(value: str) -> str:
+    return re.sub(r"[^a-z0-9.+-]+", " ", value.casefold()).strip()

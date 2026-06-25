@@ -158,6 +158,16 @@ TOURNAMENT_SEED=2026
 The model produces a 3-way regulation-time forecast: `team_a_win`, `draw`, `team_b_win`.
 Daily scan reports also show no-draw fair probabilities for each upcoming match, which
 are useful when comparing against two-outcome winner/advance markets.
+The first score-distribution layer calibrates a Poisson-style grid to the same 1X2
+forecast and prices common prediction-market props:
+
+- team handicap `+1.5`, `+2.5`, `-1.5`, `-2.5`,
+- win-by-margin phrasing such as `win by 2 or more`,
+- total goals over/under `2.5`.
+
+These handicap and total-goals markets are shown as observation deviations in daily
+reports. They only become arbitrage alerts when the model edge reaches
+`EDGE_THRESHOLD`.
 
 The side-strength logit combines:
 

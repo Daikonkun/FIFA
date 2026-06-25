@@ -6,6 +6,7 @@ from fifa_arb_agent.models import Fixture, MarketOutcome, PolymarketMarket
 from fifa_arb_agent.polymarket import (
     _looks_like_supported_match_market,
     _looks_like_supported_stage_market,
+    extract_prop_market_specs,
     extract_stage_market_team,
     match_team_outcome,
     match_yes_outcome,
@@ -92,3 +93,53 @@ def test_supported_stage_market_extracts_team_and_yes_outcome() -> None:
     assert _looks_like_supported_stage_market(market, "semifinals")
     assert extract_stage_market_team(market) == "Argentina"
     assert match_yes_outcome(market).price == 0.40
+
+
+def test_extracts_handicap_market_specs() -> None:
+    fixture = Fixture(
+        match_id="x",
+        kickoff_utc=datetime(2026, 6, 18, tzinfo=UTC),
+        team_a="Brazil",
+        team_b="Scotland",
+    )
+    market = PolymarketMarket(
+        market_id="1",
+        question="Brazil vs Scotland handicap",
+        outcomes=[
+            MarketOutcome(name="Brazil -1.5", price=0.42),
+            MarketOutcome(name="Scotland +1.5", price=0.58),
+        ],
+    )
+
+    specs = extract_prop_market_specs(market, fixture)
+
+    assert [(spec.label, spec.side, spec.line) for spec in specs] == [
+        ("Brazil -1.5", "team_a", -1.5),
+        ("Scotland +1.5", "team_b", 1.5),
+    ]
+    assert _looks_like_supported_match_market(market, fixture)
+
+
+def test_extracts_total_goals_market_specs() -> None:
+    fixture = Fixture(
+        match_id="x",
+        kickoff_utc=datetime(2026, 6, 18, tzinfo=UTC),
+        team_a="Brazil",
+        team_b="Scotland",
+    )
+    market = PolymarketMarket(
+        market_id="1",
+        question="Brazil vs Scotland total goals 2.5",
+        outcomes=[
+            MarketOutcome(name="Over 2.5", price=0.51),
+            MarketOutcome(name="Under 2.5", price=0.49),
+        ],
+    )
+
+    specs = extract_prop_market_specs(market, fixture)
+
+    assert [(spec.label, spec.side, spec.line) for spec in specs] == [
+        ("Over 2.5 goals", "over", 2.5),
+        ("Under 2.5 goals", "under", 2.5),
+    ]
+    assert _looks_like_supported_match_market(market, fixture)

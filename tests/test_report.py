@@ -14,6 +14,7 @@ from fifa_arb_agent.report import (
     build_backtest_report,
     build_report,
     build_upcoming_prediction_report,
+    find_prop_edges,
     find_stage_edges,
 )
 
@@ -137,6 +138,48 @@ def test_full_report_includes_prediction_market_deviations() -> None:
     assert "- France: model 20.0% vs market 25.0%; deviation -5.0%" in report
 
 
+def test_full_report_includes_handicap_and_total_deviations() -> None:
+    fixture = Fixture(
+        match_id="a",
+        kickoff_utc=datetime(2026, 6, 17, tzinfo=UTC),
+        team_a="Brazil",
+        team_b="Scotland",
+    )
+    forecast = MatchForecast(
+        fixture=fixture,
+        team_a_win=0.75,
+        draw=0.12,
+        team_b_win=0.13,
+        fair_team_a_no_draw=0.85,
+        fair_team_b_no_draw=0.15,
+        model_notes=[],
+    )
+    market = PolymarketMarket(
+        market_id="m",
+        question="Brazil vs Scotland handicap and total goals",
+        outcomes=[
+            MarketOutcome(name="Brazil -1.5", price=0.20),
+            MarketOutcome(name="Scotland +1.5", price=0.80),
+            MarketOutcome(name="Over 2.5", price=0.35),
+            MarketOutcome(name="Under 2.5", price=0.65),
+        ],
+    )
+
+    prop_edges = find_prop_edges(forecast, [market], 0.15, 0)
+    report = build_report(
+        [forecast],
+        {"a": [market]},
+        {"a": []},
+        "Asia/Hong_Kong",
+        prop_edge_map={"a": prop_edges},
+    )
+
+    assert "Handicap/total deviations:" in report
+    assert "Brazil -1.5: model" in report
+    assert "Over 2.5 goals: model" in report
+    assert "Handicap/total alerts:" in report
+
+
 def test_upcoming_prediction_report_is_threshold_free() -> None:
     fixture = Fixture(
         match_id="a",
@@ -168,6 +211,37 @@ def test_upcoming_prediction_report_is_threshold_free() -> None:
     assert "Match observations are not filtered by the arbitrage threshold." in report
     assert "Argentina vs France" in report
     assert "Market dev: Argentina +2.0%, Draw +0.0%, France -2.0%" in report
+
+
+def test_upcoming_prediction_report_includes_prop_deviation_summary() -> None:
+    fixture = Fixture(
+        match_id="a",
+        kickoff_utc=datetime(2026, 6, 17, tzinfo=UTC),
+        team_a="Brazil",
+        team_b="Scotland",
+    )
+    forecast = MatchForecast(
+        fixture=fixture,
+        team_a_win=0.75,
+        draw=0.12,
+        team_b_win=0.13,
+        fair_team_a_no_draw=0.85,
+        fair_team_b_no_draw=0.15,
+        model_notes=[],
+    )
+    market = PolymarketMarket(
+        market_id="m",
+        question="Brazil vs Scotland handicap",
+        outcomes=[
+            MarketOutcome(name="Brazil -1.5", price=0.40),
+            MarketOutcome(name="Scotland +1.5", price=0.60),
+        ],
+    )
+
+    report = build_upcoming_prediction_report([forecast], {"a": [market]}, "Asia/Hong_Kong")
+
+    assert "Handicap/total dev: Brazil -1.5" in report
+    assert "Scotland +1.5" in report
 
 
 def test_find_stage_edges_compares_stage_market_prices() -> None:

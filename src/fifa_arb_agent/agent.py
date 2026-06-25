@@ -13,6 +13,7 @@ from fifa_arb_agent.report import (
     build_stage_edge_report,
     build_upcoming_prediction_report,
     find_edges,
+    find_prop_edges,
     find_stage_edges,
 )
 from fifa_arb_agent.storage import ReportStore
@@ -50,11 +51,18 @@ class FifaArbAgent:
 
         market_map = {}
         edge_map = {}
+        prop_edge_map = {}
         for forecast in forecasts:
             markets = await self.polymarket.find_match_markets(forecast.fixture)
             markets = await self.polymarket.enrich_orderbook_prices(markets)
             market_map[forecast.fixture.match_id] = markets
             edge_map[forecast.fixture.match_id] = find_edges(
+                forecast,
+                markets,
+                self.settings.edge_threshold,
+                self.settings.min_market_liquidity,
+            )
+            prop_edge_map[forecast.fixture.match_id] = find_prop_edges(
                 forecast,
                 markets,
                 self.settings.edge_threshold,
@@ -71,19 +79,45 @@ class FifaArbAgent:
             self.settings.min_market_liquidity,
         )
 
-        report = build_report(forecasts, market_map, edge_map, self.settings.timezone)
+        report = build_report(
+            forecasts,
+            market_map,
+            edge_map,
+            self.settings.timezone,
+            prop_edge_map=prop_edge_map,
+        )
         report = f"{report}\n\n{tournament_report}\n\n{backtest_report}"
-        if stage_edges:
+        if stage_edges or any(prop_edge_map.values()):
             alert_summary = build_combined_alert_report(
-                forecasts, market_map, edge_map, stage_edges, self.settings.timezone
+                forecasts,
+                market_map,
+                edge_map,
+                stage_edges,
+                self.settings.timezone,
+                prop_edge_map=prop_edge_map,
             )
             report = f"{report}\n\n{alert_summary}"
         scan_id = self.store.save(report, forecasts, market_map, edge_map)
-        total_edges = sum(len(items) for items in edge_map.values()) + len(stage_edges)
+        total_edges = (
+            sum(len(items) for items in edge_map.values())
+            + sum(len(items) for items in prop_edge_map.values())
+            + len(stage_edges)
+        )
         if self.settings.telegram_alerts_only:
             telegram_sections = [
                 build_upcoming_prediction_report(forecasts, market_map, self.settings.timezone)
             ]
+            if any(edge_map.values()) or any(prop_edge_map.values()):
+                telegram_sections.append(
+                    build_report(
+                        forecasts,
+                        market_map,
+                        edge_map,
+                        self.settings.timezone,
+                        alerts_only=True,
+                        prop_edge_map=prop_edge_map,
+                    )
+                )
             if stage_edges:
                 telegram_sections.append(build_stage_edge_report(stage_edges, self.settings.timezone))
             telegram_report = "\n\n".join(telegram_sections)
