@@ -45,7 +45,11 @@ class TournamentSimulator:
         self._advance_probability_cache: dict[tuple[str, str, str], float] = {}
 
     def simulate(self, fixtures: list[Fixture], simulations: int) -> list[TeamStageProbability]:
-        teams = sorted({fixture.team_a for fixture in fixtures} | {fixture.team_b for fixture in fixtures})
+        group_fixtures = [fixture for fixture in fixtures if _is_group_stage(fixture)]
+        if not group_fixtures:
+            raise ValueError("Tournament simulation requires group-stage fixtures.")
+
+        teams = sorted({fixture.team_a for fixture in group_fixtures} | {fixture.team_b for fixture in group_fixtures})
         counts = {
             team: defaultdict(int)
             for team in teams
@@ -53,7 +57,7 @@ class TournamentSimulator:
 
         group_map = self._group_map(teams)
         for _ in range(simulations):
-            qualifiers = self._simulate_group_stage(fixtures, group_map)
+            qualifiers = self._simulate_group_stage(group_fixtures, group_map)
             for team in qualifiers:
                 counts[team]["top_32"] += 1
 
@@ -111,6 +115,8 @@ class TournamentSimulator:
             tables[group][team] = TableRow(team=team)
 
         for fixture in fixtures:
+            if not _is_group_stage(fixture):
+                continue
             goals_a, goals_b = self._match_score(fixture)
             self._apply_result(tables[group_map[fixture.team_a]], fixture.team_a, fixture.team_b, goals_a, goals_b)
 
@@ -295,3 +301,7 @@ def _dummy_kickoff():
     from datetime import UTC, datetime
 
     return datetime(2026, 7, 1, tzinfo=UTC)
+
+
+def _is_group_stage(fixture: Fixture) -> bool:
+    return "group" in fixture.stage.lower()

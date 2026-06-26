@@ -28,12 +28,13 @@ jobs:
           TEAM_RATINGS_PATH: data/team_ratings.json
           TEAM_CONTEXT_PATH: data/team_context.json
           TELEGRAM_ALERTS_ONLY: "true"
+          REPORT_LOOKAHEAD_HOURS: "24"
           EDGE_THRESHOLD: "0.15"
           TOURNAMENT_SIMULATIONS: "20000"
           TOURNAMENT_SEED: "2026"
           TIMEZONE: Asia/Hong_Kong
         run: |
           python scripts/update_fixtures.py
-          python scripts/update_ratings.py
-          python scripts/update_team_context.py
+          python scripts/update_ratings.py || echo "Rating refresh failed; continuing with checked-in data."
+          python scripts/update_team_context.py || echo "Team context refresh failed; continuing with checked-in data."
           fifa-arb-agent

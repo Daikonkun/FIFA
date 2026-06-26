@@ -35,6 +35,15 @@ def test_tournament_simulator_outputs_stage_probabilities() -> None:
                         stage="group",
                     )
                 )
+    fixtures.append(
+        Fixture(
+            match_id="api-football-early-knockout",
+            kickoff_utc=datetime(2026, 6, 28, tzinfo=UTC),
+            team_a=teams[0],
+            team_b=teams[4],
+            stage="round_of_32",
+        )
+    )
 
     probabilities = TournamentSimulator(
         TeamRatings(ratings),
