@@ -178,6 +178,9 @@ combo mixes:
 
 The combo prints model probability, fair Polymarket price, decimal fair odds, and any
 matched market edge. It is a research sizing template, not an instruction to trade.
+The upside leg is risk-controlled: it uses the favorite `-1.5` only when the favorite
+win probability and cover probability are both strong enough; otherwise its stake is
+set to `0%` and reallocated to the safety/direction legs.
 
 The side-strength logit combines:
 

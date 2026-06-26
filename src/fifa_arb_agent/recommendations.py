@@ -23,13 +23,17 @@ def build_combo_recommendation(
     safety = _safety_handicap_leg(forecast, score_grid, markets)
     direction = _direction_leg(forecast, markets, favorite_team, favorite_win)
     upside = _upside_handicap_leg(forecast.fixture, score_grid, markets, favorite_side, favorite_team)
+    upside_active = _is_upside_active(favorite_win, upside.model_probability)
 
-    if favorite_win >= 0.72:
+    if favorite_win >= 0.75 and upside_active:
         weights = {"safety": 0.45, "direction": 0.35, "upside": 0.20}
         profile = "favorite-weighted"
     elif favorite_win <= 0.55:
-        weights = {"safety": 0.60, "direction": 0.25, "upside": 0.15}
+        weights = {"safety": 0.70, "direction": 0.30, "upside": 0.0}
         profile = "defensive-balanced"
+    elif not upside_active:
+        weights = {"safety": 0.60, "direction": 0.40, "upside": 0.0}
+        profile = "risk-controlled"
     else:
         weights = {"safety": 0.50, "direction": 0.35, "upside": 0.15}
         profile = "balanced"
@@ -43,7 +47,10 @@ def build_combo_recommendation(
         fixture=forecast.fixture,
         profile=profile,
         legs=legs,
-        note="Use only when market price is below model fair price; weights are a research mix.",
+        note=(
+            "Use only when market price is below model fair price; upside stake is active "
+            "only for strong favorite cover spots."
+        ),
     )
 
 
@@ -106,11 +113,8 @@ def _upside_handicap_leg(
     favorite_side: str,
     favorite_team: str,
 ) -> ComboLeg:
-    candidates = []
-    for line in (-1.5, -2.5):
-        probability = score_grid.price_handicap(favorite_side, line)
-        candidates.append((abs(probability - 0.34), probability, line))
-    _, probability, line = min(candidates, key=lambda item: (item[0], -item[1]))
+    line = -1.5
+    probability = score_grid.price_handicap(favorite_side, line)
     return _with_market_price(
         ComboLeg(
             role="upside",
@@ -124,6 +128,10 @@ def _upside_handicap_leg(
         side=favorite_side,
         line=line,
     )
+
+
+def _is_upside_active(favorite_win: float, cover_probability: float) -> bool:
+    return favorite_win >= 0.75 and cover_probability >= 0.30
 
 
 def _with_market_price(

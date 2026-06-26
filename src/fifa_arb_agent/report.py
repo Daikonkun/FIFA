@@ -454,8 +454,9 @@ def _combo_recommendation_lines(
         market = ""
         if leg.market_probability is not None and leg.edge is not None:
             market = f", market {leg.market_probability:.1%}, edge {leg.edge:+.1%}"
+        status = "inactive " if leg.stake_weight == 0 else ""
         lines.append(
-            f"- {leg.role.title()} {leg.stake_weight:.0%}: {leg.label} "
+            f"- {leg.role.title()} {leg.stake_weight:.0%}: {status}{leg.label} "
             f"model {leg.model_probability:.1%}, fair <= {leg.model_probability:.3f} "
             f"(dec {leg.fair_decimal_odds:.2f}){market}"
         )
@@ -470,7 +471,11 @@ def _combo_recommendation_summary(forecast: MatchForecast, markets: list[Polymar
         market = ""
         if leg.edge is not None:
             market = f", edge {leg.edge:+.1%}"
-        parts.append(f"{leg.role} {leg.stake_weight:.0%} {leg.label} p {leg.model_probability:.1%}{market}")
+        status = "inactive " if leg.stake_weight == 0 else ""
+        parts.append(
+            f"{leg.role} {leg.stake_weight:.0%} {status}{leg.label} "
+            f"p {leg.model_probability:.1%}{market}"
+        )
     return "; ".join(parts)
 
 

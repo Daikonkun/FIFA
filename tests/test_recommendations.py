@@ -29,6 +29,7 @@ def test_build_combo_recommendation_mixes_1x2_and_handicap_legs() -> None:
     assert [leg.role for leg in combo.legs] == ["safety", "direction", "upside"]
     assert {leg.market_type for leg in combo.legs} == {"1x2", "handicap"}
     assert sum(leg.stake_weight for leg in combo.legs) == 1.0
+    assert combo.legs[2].label == "Brazil -1.5"
 
 
 def test_combo_recommendation_attaches_market_edges() -> None:
@@ -72,3 +73,29 @@ def test_combo_recommendation_attaches_market_edges() -> None:
     assert combo.legs[1].label == "Brazil 1X2"
     assert combo.legs[1].market_probability == 0.70
     assert round(combo.legs[1].edge or 0, 2) == 0.05
+
+
+def test_combo_recommendation_inactivates_upside_for_weaker_favorite() -> None:
+    fixture = Fixture(
+        match_id="a",
+        kickoff_utc=datetime(2026, 6, 17, tzinfo=UTC),
+        team_a="Ecuador",
+        team_b="Germany",
+    )
+    forecast = MatchForecast(
+        fixture=fixture,
+        team_a_win=0.21,
+        draw=0.14,
+        team_b_win=0.65,
+        fair_team_a_no_draw=0.25,
+        fair_team_b_no_draw=0.75,
+        model_notes=[],
+    )
+
+    combo = build_combo_recommendation(forecast, [])
+
+    assert combo.profile == "risk-controlled"
+    assert combo.legs[2].role == "upside"
+    assert combo.legs[2].stake_weight == 0
+    assert combo.legs[2].label == "Germany -1.5"
+    assert sum(leg.stake_weight for leg in combo.legs) == 1.0
