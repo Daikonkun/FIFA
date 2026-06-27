@@ -14,6 +14,10 @@ from fifa_arb_agent.polymarket import (
 from fifa_arb_agent.score_model import ScoreGrid, build_score_grid
 
 
+ALERT_EDGE = 0.15
+LEAN_EDGE = 0.05
+
+
 def build_combo_recommendation(
     forecast: MatchForecast, markets: list[PolymarketMarket]
 ) -> MatchComboRecommendation:
@@ -102,7 +106,11 @@ def _direction_leg(
     if market_probability is None:
         return leg
     return leg.model_copy(
-        update={"market_probability": market_probability, "edge": favorite_win - market_probability}
+        update={
+            "market_probability": market_probability,
+            "edge": favorite_win - market_probability,
+            "confidence_tier": _confidence_tier("direction", favorite_win, favorite_win - market_probability),
+        }
     )
 
 
@@ -140,12 +148,24 @@ def _with_market_price(
     market_probability = _match_handicap_market_price(markets, fixture, side, line)
     if market_probability is None:
         return leg
+    edge = leg.model_probability - market_probability
     return leg.model_copy(
         update={
             "market_probability": market_probability,
-            "edge": leg.model_probability - market_probability,
+            "edge": edge,
+            "confidence_tier": _confidence_tier(leg.role, leg.model_probability, edge),
         }
     )
+
+
+def _confidence_tier(role: str, model_probability: float, edge: float) -> str:
+    alert_floor = {"safety": 0.65, "direction": 0.50, "upside": 0.35}[role]
+    lean_floor = {"safety": 0.60, "direction": 0.45, "upside": 0.30}[role]
+    if edge >= ALERT_EDGE and model_probability >= alert_floor:
+        return "alert"
+    if edge >= LEAN_EDGE and model_probability >= lean_floor:
+        return "lean"
+    return "observe"
 
 
 def _match_1x2_market_price(

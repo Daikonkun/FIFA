@@ -176,8 +176,14 @@ combo mixes:
 - a 1X2 directional leg,
 - a smaller upside handicap leg.
 
-The combo prints model probability, fair Polymarket price, decimal fair odds, and any
-matched market edge. It is a research sizing template, not an instruction to trade.
+The combo prints model probability, fair Polymarket price, decimal fair odds, any
+matched market edge, and a confidence tier:
+
+- `observe`: model view only or weak/no positive market edge,
+- `lean`: positive edge with balanced probability support,
+- `alert`: edge and model probability both clear the active alert filters.
+
+It is a research sizing template, not an instruction to trade.
 The upside leg is risk-controlled: it uses the favorite `-1.5` only when the favorite
 win probability and cover probability are both strong enough; otherwise its stake is
 set to `0%` and reallocated to the safety/direction legs.
@@ -185,13 +191,19 @@ set to `0%` and reallocated to the safety/direction legs.
 The side-strength logit combines:
 
 - global rating delta: Elo-like rating difference,
-- FIFA rank prior: small stabilizer when Elo is stale,
+- FIFA rank prior: small stabilizer when Elo is stale; `calibration-v2` reduces
+  this weight versus earlier runs,
 - World Cup pedigree: log-scaled points from the last three World Cups,
 - confederation tournament adjustment,
 - host / near-host advantage,
 - rest-day difference,
 - short-term form delta,
 - injury/suspension penalty.
+
+`calibration-v2` puts heavier weight on actual 2026 World Cup performance than
+the original model by increasing current tournament points/form weights and
+reducing the FIFA-rank stabilizer. Every saved forecast stores its model version
+and calibration parameter snapshot for later validation.
 
 The draw logit is World Cup-aware:
 
@@ -225,9 +237,19 @@ a compact validation block to the persisted report. The block includes:
 - Brier score,
 - log loss.
 
-This is a current-snapshot diagnostic, not a clean historical pre-match backtest. A
-fully clean backtest would require saving ratings and team context snapshots before
-each kickoff.
+This is a current-snapshot diagnostic, not a clean historical pre-match backtest.
+
+For pre-match snapshot validation, run:
+
+```bash
+python scripts/evaluate_model.py --grid-search
+```
+
+The evaluator joins stored scan snapshots in `reports/fifa_agent.sqlite3` to the
+latest completed scores, then reports forecast accuracy, 1X2 alert performance,
+handicap alert performance, combo-leg hit rates, positive-edge buckets, and a
+small calibration grid search. New scan rows also persist prop edges, combo legs,
+model version, and calibration parameters; old scan rows remain readable.
 
 ## Cron
 

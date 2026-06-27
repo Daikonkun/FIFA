@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -63,6 +63,8 @@ class MatchForecast(BaseModel):
     fair_team_a_no_draw: float
     fair_team_b_no_draw: float
     model_notes: list[str]
+    model_version: str = "calibration-v1"
+    calibration_params: dict[str, Any] = Field(default_factory=dict)
 
 
 class MarketOutcome(BaseModel):
@@ -122,8 +124,10 @@ class ComboLeg(BaseModel):
     label: str
     model_probability: float
     stake_weight: float
+    confidence_tier: Literal["observe", "lean", "alert"] = "observe"
     market_probability: float | None = None
     edge: float | None = None
+    historical_hit_rate: float | None = None
 
     @property
     def fair_decimal_odds(self) -> float:

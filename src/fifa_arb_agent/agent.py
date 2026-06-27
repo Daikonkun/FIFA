@@ -97,7 +97,7 @@ class FifaArbAgent:
                 prop_edge_map=prop_edge_map,
             )
             report = f"{report}\n\n{alert_summary}"
-        scan_id = self.store.save(report, forecasts, market_map, edge_map)
+        scan_id = self.store.save(report, forecasts, market_map, edge_map, prop_edge_map)
         total_edges = (
             sum(len(items) for items in edge_map.values())
             + sum(len(items) for items in prop_edge_map.values())

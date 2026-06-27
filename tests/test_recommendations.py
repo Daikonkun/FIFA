@@ -73,6 +73,40 @@ def test_combo_recommendation_attaches_market_edges() -> None:
     assert combo.legs[1].label == "Brazil 1X2"
     assert combo.legs[1].market_probability == 0.70
     assert round(combo.legs[1].edge or 0, 2) == 0.05
+    assert combo.legs[1].confidence_tier == "lean"
+
+
+def test_combo_recommendation_marks_large_market_edge_as_alert() -> None:
+    fixture = Fixture(
+        match_id="a",
+        kickoff_utc=datetime(2026, 6, 17, tzinfo=UTC),
+        team_a="Brazil",
+        team_b="Scotland",
+    )
+    forecast = MatchForecast(
+        fixture=fixture,
+        team_a_win=0.75,
+        draw=0.12,
+        team_b_win=0.13,
+        fair_team_a_no_draw=0.85,
+        fair_team_b_no_draw=0.15,
+        model_notes=[],
+    )
+    markets = [
+        PolymarketMarket(
+            market_id="1x2",
+            question="Brazil vs Scotland winner",
+            outcomes=[
+                MarketOutcome(name="Brazil", price=0.55),
+                MarketOutcome(name="Draw", price=0.20),
+                MarketOutcome(name="Scotland", price=0.25),
+            ],
+        )
+    ]
+
+    combo = build_combo_recommendation(forecast, markets)
+
+    assert combo.legs[1].confidence_tier == "alert"
 
 
 def test_combo_recommendation_inactivates_upside_for_weaker_favorite() -> None:

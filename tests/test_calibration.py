@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from fifa_arb_agent.models import Fixture, TeamContext, TeamRating
-from fifa_arb_agent.ratings import TeamRatings, WorldCupCalibrator
+from fifa_arb_agent.ratings import CalibrationParameters, TeamRatings, WorldCupCalibrator
 from fifa_arb_agent.team_context import TeamContexts
 
 
@@ -123,3 +123,33 @@ def test_api_football_context_moves_forecast_modestly() -> None:
 
     assert enriched.team_a_win > base.team_a_win
     assert any(note.startswith("api_tournament_delta=") for note in enriched.model_notes)
+    assert enriched.model_version == "calibration-v2"
+    assert enriched.calibration_params["rank_weight"] == 0.025
+
+
+def test_current_world_cup_weight_is_tuneable() -> None:
+    fixture = Fixture(
+        match_id="x",
+        kickoff_utc=datetime(2026, 6, 17, tzinfo=UTC),
+        team_a="A",
+        team_b="B",
+    )
+    ratings = TeamRatings(
+        {
+            "A": TeamRating(elo=1900, fifa_rank=20, confederation="UEFA"),
+            "B": TeamRating(elo=1900, fifa_rank=20, confederation="UEFA"),
+        }
+    )
+    contexts = TeamContexts(
+        {
+            "A": TeamContext(tournament_played=2, tournament_points=3, goals_diff=1),
+            "B": TeamContext(tournament_played=2, tournament_points=2, goals_diff=0),
+        }
+    )
+
+    baseline = WorldCupCalibrator().forecast(fixture, ratings, contexts)
+    heavier = WorldCupCalibrator(
+        CalibrationParameters(current_wc_points_weight=0.24, current_wc_goal_diff_weight=0.10)
+    ).forecast(fixture, ratings, contexts)
+
+    assert heavier.team_a_win > baseline.team_a_win

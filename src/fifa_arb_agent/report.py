@@ -458,7 +458,7 @@ def _combo_recommendation_lines(
         lines.append(
             f"- {leg.role.title()} {leg.stake_weight:.0%}: {status}{leg.label} "
             f"model {leg.model_probability:.1%}, fair <= {leg.model_probability:.3f} "
-            f"(dec {leg.fair_decimal_odds:.2f}){market}"
+            f"(dec {leg.fair_decimal_odds:.2f}){market}, tier {leg.confidence_tier}"
         )
     lines.append(f"Note: {combo.note}")
     return lines
@@ -474,7 +474,7 @@ def _combo_recommendation_summary(forecast: MatchForecast, markets: list[Polymar
         status = "inactive " if leg.stake_weight == 0 else ""
         parts.append(
             f"{leg.role} {leg.stake_weight:.0%} {status}{leg.label} "
-            f"p {leg.model_probability:.1%}{market}"
+            f"p {leg.model_probability:.1%}{market}, tier {leg.confidence_tier}"
         )
     return "; ".join(parts)
 
